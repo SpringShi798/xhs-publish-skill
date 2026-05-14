@@ -14,7 +14,7 @@ description: |
 把一篇 markdown（飞书文档 or 本地文件）变成可以直接发布的小红书图片：
 - 封面（cover.png）：emoji + 标题 + 副标题 + 顶部 header（头像+昵称+日期）
 - 正文卡片（card_1.png ~ card_N.png）：按 `---` 分页或按内容高度自动分页
-- 全部 1080×1440 PNG，输出到 `xhs-output/<sanitized-title>/`
+- 全部 1080×1440 PNG，输出到 `xhs-output/<date>-<sanitized-title>/`
 
 ## 适用边界
 
@@ -76,7 +76,7 @@ avatar_text: "策"            # avatar 为空时圆圈里的字
 
 ### Step 1：拿到 md
 
-- 飞书链接 → 用 `lark-cli` 解析 wiki/docx token，再调 `/open-apis/docx/v1/documents/{token}/raw_content` 拿正文，存为 `xhs-output/<sanitized-title>/source.md`，再补 frontmatter
+- 飞书链接 → 用 `lark-cli` 解析 wiki/docx token，再调 `/open-apis/docx/v1/documents/{token}/raw_content` 拿正文，存为 `xhs-output/<date>-<sanitized-title>/source.md`，再补 frontmatter
 - 本地 md → 直接读
 
 读取后用 Read 工具看一遍全文，确认能解析 frontmatter + 正文分段。
@@ -118,7 +118,7 @@ avatar_text: "策"            # avatar 为空时圆圈里的字
 ![](./images/section-3.png)
 ```
 
-中间配图存放在 `xhs-output/<sanitized-title>/images/`，md 里用相对路径引用。
+中间配图存放在 `xhs-output/<date>-<sanitized-title>/images/`，md 里用相对路径引用。
 
 ### Step 4：渲染最终图片
 
@@ -127,7 +127,7 @@ python3 <skill 安装路径>/scripts/render_xhs.py \
   <最终 md 路径> \
   -t default \
   -m auto-split \
-  -o xhs-output/<sanitized-title>/
+  -o xhs-output/<date>-<sanitized-title>/
 ```
 
 参数：
@@ -153,6 +153,7 @@ python3 <skill 安装路径>/scripts/render_xhs.py \
 1. **绝不自动发布**：原 fork 的 `publish_xhs.py` 已删除。小红书严打 AI 托管账号
 2. **路径锚定**：输出目录建议固定在 `xhs-output/`，不要散落
 3. **文章名清洗**：`<sanitized-title>` = 把 title 里的空格/标点/emoji 替换成 `-`，长度限 30 字符
+4. **目录命名加日期前缀**：实际输出目录是 `<date>-<sanitized-title>`，`<date>` 取自 frontmatter 的 `date` 字段（格式 `YYYY-MM-DD`）。例如 `2026-05-14-my-article/`。这样 ls 排序就是时间顺序
 
 ---
 
