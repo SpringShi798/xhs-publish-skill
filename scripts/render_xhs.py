@@ -144,7 +144,7 @@ def load_theme_css(theme: str) -> str:
 
 def generate_cover_html(metadata: dict, theme: str, width: int, height: int) -> str:
     """生成封面 HTML"""
-    emoji = metadata.get('emoji', '📝')
+    emoji = metadata.get('emoji', '')  # 空则不渲染 emoji 块
     title = metadata.get('title', '标题')
     subtitle = metadata.get('subtitle', '')
 
@@ -158,15 +158,15 @@ def generate_cover_html(metadata: dict, theme: str, width: int, height: int) -> 
     # 动态调整标题字体大小
     title_len = len(title)
     if title_len <= 6:
-        title_size = int(width * 0.14)  # 极大
+        title_size = int(width * 0.20)  # 极大
     elif title_len <= 10:
-        title_size = int(width * 0.12)  # 大
+        title_size = int(width * 0.17)  # 大
     elif title_len <= 18:
-        title_size = int(width * 0.09)  # 中
+        title_size = int(width * 0.135) # 中
     elif title_len <= 30:
-        title_size = int(width * 0.07)  # 小
+        title_size = int(width * 0.11)  # 小
     else:
-        title_size = int(width * 0.055) # 极小
+        title_size = int(width * 0.085) # 极小
 
     # 获取主题背景色（default 用纯色，其他主题保留渐变）
     theme_backgrounds = {
@@ -305,21 +305,22 @@ def generate_cover_html(metadata: dict, theme: str, width: int, height: int) -> 
         .cover-emoji {{
             font-size: {int(width * 0.167)}px;
             line-height: 1.2;
-            margin-bottom: {int(height * 0.035)}px;
+            margin-bottom: {int(height * 0.055)}px;
         }}
 
         .cover-title {{
             font-weight: 900;
             font-size: {title_size}px;
-            line-height: 1.4;
+            line-height: 1.75;
             background: {title_bg};
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
             flex: 1;
             display: flex;
-            align-items: flex-start;
-            word-break: break-all;
+            align-items: center;
+            word-break: normal;
+            overflow-wrap: break-word;
         }}
 
         .cover-subtitle {{
@@ -334,7 +335,7 @@ def generate_cover_html(metadata: dict, theme: str, width: int, height: int) -> 
 <body>
     <div class="cover-container">
         <div class="cover-inner">{header_html}
-            <div class="cover-emoji">{emoji}</div>
+            {f'<div class="cover-emoji">{emoji}</div>' if emoji else ''}
             <div class="cover-title">{title}</div>
             <div class="cover-subtitle">{subtitle}</div>
         </div>
