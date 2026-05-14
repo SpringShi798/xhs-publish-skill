@@ -142,7 +142,7 @@ def load_theme_css(theme: str) -> str:
         return ""
 
 
-def generate_cover_html(metadata: dict, theme: str, width: int, height: int) -> str:
+def generate_cover_html(metadata: dict, theme: str, width: int, height: int, base_href: str = '') -> str:
     """生成封面 HTML"""
     emoji = metadata.get('emoji', '')  # 空则不渲染 emoji 块
     title = metadata.get('title', '标题')
@@ -184,7 +184,7 @@ def generate_cover_html(metadata: dict, theme: str, width: int, height: int) -> 
 
     # 封面标题文字渐变随主题变化
     title_gradients = {
-        'default': 'linear-gradient(180deg, #111827 0%, #4B5563 100%)',
+        'default': '#1F2937',
         'playful-geometric': 'linear-gradient(180deg, #7C3AED 0%, #F472B6 100%)',
         'neo-brutalism': 'linear-gradient(180deg, #000000 0%, #FF4757 100%)',
         'botanical': 'linear-gradient(180deg, #1F2937 0%, #4A7C59 100%)',
@@ -219,6 +219,7 @@ def generate_cover_html(metadata: dict, theme: str, width: int, height: int) -> 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width={width}, height={height}">
+    {f'<base href="{base_href}">' if base_href else ''}
     <title>小红书封面</title>
     <style>
         * {{
@@ -316,7 +317,7 @@ def generate_cover_html(metadata: dict, theme: str, width: int, height: int) -> 
         .cover-title {{
             font-weight: 900;
             font-size: {title_size}px;
-            line-height: 1.3;
+            line-height: 1.55;
             background: {title_bg};
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
@@ -354,7 +355,7 @@ def generate_cover_html(metadata: dict, theme: str, width: int, height: int) -> 
 def generate_card_html(content: str, theme: str, page_number: int = 1,
                        total_pages: int = 1, width: int = DEFAULT_WIDTH,
                        height: int = DEFAULT_HEIGHT, mode: str = 'separator',
-                       watermark: str = '') -> str:
+                       watermark: str = '', base_href: str = '') -> str:
     """生成正文卡片 HTML"""
 
     html_content = convert_markdown_to_html(content)
@@ -443,6 +444,7 @@ def generate_card_html(content: str, theme: str, page_number: int = 1,
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width={width}">
+    {f'<base href="{base_href}">' if base_href else ''}
     <title>小红书卡片</title>
     <style>
         * {{
@@ -597,8 +599,8 @@ async def render_html_to_image(html_content: str, output_path: str,
             await browser.close()
 
 
-async def auto_split_content(body: str, theme: str, width: int, height: int, 
-                             dpr: int = 2) -> List[str]:
+async def auto_split_content(body: str, theme: str, width: int, height: int,
+                             dpr: int = 2, base_href: str = '') -> List[str]:
     """自动切分内容：根据渲染后的高度自动分页"""
     
     # 将内容按段落分割
@@ -620,7 +622,7 @@ async def auto_split_content(body: str, theme: str, width: int, height: int,
                 test_content = current_content + [para]
                 test_md = '\n\n'.join(test_content)
                 
-                html = generate_card_html(test_md, theme, 1, 1, width, height, 'auto-split')
+                html = generate_card_html(test_md, theme, 1, 1, width, height, 'auto-split', '', base_href)
                 
                 with tempfile.NamedTemporaryFile(mode='w', suffix='.html', delete=False, encoding='utf-8') as f:
                     f.write(html)
@@ -677,26 +679,30 @@ async def render_markdown_to_cards(md_file: str, output_dir: str,
     
     # 确保输出目录存在
     os.makedirs(output_dir, exist_ok=True)
-    
+
     # 解析 Markdown 文件
     data = parse_markdown_file(md_file)
     metadata = data['metadata']
     body = data['body']
-    
+
+    # base_href：让 md 里的相对图片路径 ./images/x.png 相对 md 所在目录解析
+    md_dir = os.path.dirname(os.path.abspath(md_file))
+    base_href = f'file://{md_dir}/'
+
     # 根据模式处理内容分割
     if mode == 'auto-split':
         print("  ⏳ 自动分析内容并切分...")
-        card_contents = await auto_split_content(body, theme, width, height, dpr)
+        card_contents = await auto_split_content(body, theme, width, height, dpr, base_href)
     else:
         card_contents = split_content_by_separator(body)
-    
+
     total_cards = len(card_contents)
     print(f"  📄 检测到 {total_cards} 张正文卡片")
-    
+
     # 生成封面
     if metadata.get('emoji') or metadata.get('title'):
         print("  📷 生成封面...")
-        cover_html = generate_cover_html(metadata, theme, width, height)
+        cover_html = generate_cover_html(metadata, theme, width, height, base_href)
         cover_path = os.path.join(output_dir, 'cover.png')
         await render_html_to_image(cover_html, cover_path, width, height, 'separator', max_height, dpr)
     
@@ -711,7 +717,7 @@ async def render_markdown_to_cards(md_file: str, output_dir: str,
     # 生成正文卡片
     for i, content in enumerate(card_contents, 1):
         print(f"  📷 生成卡片 {i}/{total_cards}...")
-        card_html = generate_card_html(content, theme, i, total_cards, width, height, mode, watermark)
+        card_html = generate_card_html(content, theme, i, total_cards, width, height, mode, watermark, base_href)
         card_path = os.path.join(output_dir, f'card_{i}.png')
         await render_html_to_image(card_html, card_path, width, height, mode, max_height, dpr)
     
