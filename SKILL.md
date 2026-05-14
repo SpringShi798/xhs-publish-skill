@@ -49,7 +49,7 @@ avatar_text: "策"            # avatar 为空时圆圈里的字
 
 如果 frontmatter 不全，主动询问用户补齐——尤其 emoji/title/subtitle 是封面必需。
 
-正文用 `---`（独立行）分隔多张卡片，或交给 `auto-split` 模式自动分页。
+默认走 `auto-split` 模式：按内容高度自动分页，带标题孤儿保护（H1/H2/H3 不会孤零零留在卡片末尾）。如果想精确控制分页，也可以手动放 `---` 用 `separator` 模式。
 
 ### Blockquote（`>` 引用块）的使用准则
 
@@ -119,15 +119,15 @@ avatar_text: "策"            # avatar 为空时圆圈里的字
 python3 <skill 安装路径>/scripts/render_xhs.py \
   <最终 md 路径> \
   -t default \
-  -m separator \
+  -m auto-split \
   -o xhs-output/<sanitized-title>/
 ```
 
 参数：
 - `-t` 主题：`default`（推荐）/ `professional` / `botanical` / `sketch` / `playful-geometric` / `neo-brutalism` / `retro` / `terminal`
 - `-m` 分页模式：
-  - `separator`（默认）：按 md 里的 `---` 手动分页
-  - `auto-split`：根据内容高度自动切分（适合长文章 + 没插 `---`）
+  - `auto-split`（默认）：根据内容高度自动切分，带标题孤儿保护（H1/H2/H3 不会孤零零留在卡片末尾）
+  - `separator`：按 md 里的 `---` 手动分页（适合想精确控制分页位置时）
   - `auto-fit`：自动缩放文字以填满固定尺寸
   - `dynamic`：根据内容动态调整图片高度（不限定 1440）
 - `-o` 输出目录

@@ -252,14 +252,14 @@ def generate_cover_html(metadata: dict, theme: str, width: int, height: int) -> 
             border-radius: {'0' if is_flat else '25px'};
             display: flex;
             flex-direction: column;
-            padding: {int(width * 0.074)}px {int(width * 0.079)}px;
+            padding: {int(width * 0.074)}px {int(width * 0.079)}px {int(height * 0.065)}px;
         }}
 
         .cover-header {{
             display: flex;
             align-items: center;
             gap: 24px;
-            margin-bottom: {int(height * 0.04)}px;
+            margin-bottom: 0;
         }}
 
         .cover-avatar {{
@@ -303,22 +303,25 @@ def generate_cover_html(metadata: dict, theme: str, width: int, height: int) -> 
         }}
 
         .cover-emoji {{
-            font-size: {int(width * 0.167)}px;
+            font-size: {int(width * 0.145)}px;
             line-height: 1.2;
-            margin-bottom: {int(height * 0.055)}px;
+            margin-bottom: {int(height * 0.022)}px;
+        }}
+
+        .cover-main {{
+            margin-top: {int(height * 0.055)}px;
+            flex: 0 0 auto;
         }}
 
         .cover-title {{
             font-weight: 900;
             font-size: {title_size}px;
-            line-height: 1.75;
+            line-height: 1.3;
             background: {title_bg};
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
-            flex: 1;
-            display: flex;
-            align-items: center;
+            display: block;
             word-break: normal;
             overflow-wrap: break-word;
         }}
@@ -329,14 +332,17 @@ def generate_cover_html(metadata: dict, theme: str, width: int, height: int) -> 
             line-height: 1.4;
             color: #000000;
             margin-top: auto;
+            padding-top: {int(height * 0.04)}px;
         }}
     </style>
 </head>
 <body>
     <div class="cover-container">
         <div class="cover-inner">{header_html}
-            {f'<div class="cover-emoji">{emoji}</div>' if emoji else ''}
-            <div class="cover-title">{title}</div>
+            <div class="cover-main">
+                {f'<div class="cover-emoji">{emoji}</div>' if emoji else ''}
+                <div class="cover-title">{title}</div>
+            </div>
             <div class="cover-subtitle">{subtitle}</div>
         </div>
     </div>
@@ -635,9 +641,14 @@ async def auto_split_content(body: str, theme: str, width: int, height: int,
                 available_height = height - 220  # 50*2 padding + 60*2 inner padding
 
                 if content_height > available_height and current_content:
-                    # 当前卡片已满，保存并开始新卡片
-                    cards.append('\n\n'.join(current_content))
-                    current_content = [para]
+                    # widow 保护：上一张末尾若是孤儿标题（H1/H2/H3），把它挪到本张开头
+                    if len(current_content) >= 2 and re.match(r'^#{1,3}\s+', current_content[-1].strip()):
+                        orphan = current_content[-1]
+                        cards.append('\n\n'.join(current_content[:-1]))
+                        current_content = [orphan, para]
+                    else:
+                        cards.append('\n\n'.join(current_content))
+                        current_content = [para]
                 else:
                     current_content = test_content
             
